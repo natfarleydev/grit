@@ -12,7 +12,7 @@ import (
 
 var (
 	authorRegex string
-	linesCmd = &cobra.Command{
+	linesCmd    = &cobra.Command{
 		Use:   "lines [paths...]",
 		Short: "Count lines added/removed by authors matching regex",
 		Run:   runLines,
@@ -87,5 +87,5 @@ func runLines(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	fmt.Printf("+%d/-%d\n", totalAdded, totalDeleted)
+	fmt.Printf("+%d/-%d", totalAdded, totalDeleted)
 }
