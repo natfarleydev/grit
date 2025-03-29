@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,7 +16,7 @@ import (
 
 func setupIntegrationTestRepo(t *testing.T) (string, func()) {
 	// Create a temporary directory
-	dir, err := ioutil.TempDir("", "grit-integration-test")
+	dir, err := os.MkdirTemp("", "grit-integration-test")
 	assert.NoError(t, err)
 
 	// Initialize git repo
@@ -54,7 +53,7 @@ func setupIntegrationTestRepo(t *testing.T) (string, func()) {
 	// First create and commit initial content
 	for _, f := range files {
 		path := filepath.Join(dir, f.name)
-		err = ioutil.WriteFile(path, []byte(f.content), 0644)
+		err = os.WriteFile(path, []byte(f.content), 0644)
 		assert.NoError(t, err)
 
 		_, err = w.Add(f.name)
@@ -73,7 +72,7 @@ func setupIntegrationTestRepo(t *testing.T) (string, func()) {
 	// Then update and commit changes with different authors
 	for _, f := range files {
 		path := filepath.Join(dir, f.name)
-		err = ioutil.WriteFile(path, []byte(f.newContent), 0644)
+		err = os.WriteFile(path, []byte(f.newContent), 0644)
 		assert.NoError(t, err)
 
 		_, err = w.Add(f.name)
