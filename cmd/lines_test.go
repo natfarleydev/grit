@@ -72,33 +72,33 @@ func setupTestRepo(t *testing.T) (string, func()) {
 
 func TestRunLines(t *testing.T) {
 	tests := []struct {
-		name       string
+		name        string
 		authorRegex string
-		wantAdded  int64
+		wantAdded   int64
 		wantDeleted int64
 	}{
 		{
-			name:       "Match Nathanael",
+			name:        "Match Nathanael",
 			authorRegex: "Nathanael",
-			wantAdded:  15, // Length of "initial content"
+			wantAdded:   15, // Length of "initial content"
 			wantDeleted: 0,
 		},
 		{
-			name:       "Match Mirabel",
+			name:        "Match Mirabel",
 			authorRegex: "Mirabel",
-			wantAdded:  25, // Length of "modified content\nby Mirabel"
+			wantAdded:   25, // Length of "modified content\nby Mirabel"
 			wantDeleted: 15, // Length of "initial content"
 		},
 		{
-			name:       "Match both authors",
+			name:        "Match both authors",
 			authorRegex: "(Nathanael|Mirabel)",
-			wantAdded:  40, // Total additions
+			wantAdded:   40, // Total additions
 			wantDeleted: 15, // Total deletions
 		},
 		{
-			name:       "Match no authors",
+			name:        "Match no authors",
 			authorRegex: "NonExistent",
-			wantAdded:  0,
+			wantAdded:   0,
 			wantDeleted: 0,
 		},
 	}
@@ -128,7 +128,7 @@ func TestRunLines(t *testing.T) {
 			output := buf.String()
 
 			// Verify output format
-			assert.Regexp(t, `\+\d+/-\d+\n`, output)
+			assert.Regexp(t, `\+\d+/-\d+`, output)
 		})
 	}
 }

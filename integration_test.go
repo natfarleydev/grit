@@ -26,25 +26,25 @@ func setupIntegrationTestRepo(t *testing.T) (string, func()) {
 
 	// Create test files with different authors
 	files := []struct {
-		name     string
-		content  string
+		name       string
+		content    string
 		newContent string
-		author   string
-		email    string
+		author     string
+		email      string
 	}{
 		{
-			name:     "file1.txt",
-			content:  "Initial content\nfor file 1\n",
+			name:       "file1.txt",
+			content:    "Initial content\nfor file 1\n",
 			newContent: "Updated content\nfor file 1\nby Nathanael\n",
-			author:   "Nathanael Farley",
-			email:    "nathanael@example.com",
+			author:     "Nathanael Farley",
+			email:      "nathanael@example.com",
 		},
 		{
-			name:     "file2.txt",
-			content:  "Initial content\nfor file 2\n",
+			name:       "file2.txt",
+			content:    "Initial content\nfor file 2\n",
 			newContent: "Updated content\nfor file 2\nby Mirabel\n",
-			author:   "Mirabel Smith",
-			email:    "mirabel@example.com",
+			author:     "Mirabel Smith",
+			email:      "mirabel@example.com",
 		},
 	}
 
@@ -129,15 +129,27 @@ func TestCommandLineInterface(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name:    "count lines for everyone",
+			args:    []string{"count", "lines", "."},
+			wantOut: "+4/-2", // Updated content: 2 new lines, 1 deleted line
+			wantErr: false,
+		},
+		{
+			name:    "count lines for (Nathanael|Mirabel|Louisa)",
+			args:    []string{"count", "lines", "--author-regex", "(Nathanael|Mirabel|Louisa)", "."},
+			wantOut: "+4/-2", // Updated content: 2 new lines, 1 deleted line
+			wantErr: false,
+		},
+		{
 			name:    "count lines for Nathanael",
 			args:    []string{"count", "lines", "--author-regex", "Nathanael", "."},
-			wantOut: "+2/-1",  // Updated content: 2 new lines, 1 deleted line
+			wantOut: "+2/-1", // Updated content: 2 new lines, 1 deleted line
 			wantErr: false,
 		},
 		{
 			name:    "count lines for Mirabel",
 			args:    []string{"count", "lines", "--author-regex", "Mirabel", "."},
-			wantOut: "+2/-1",  // Updated content: 2 new lines, 1 deleted line
+			wantOut: "+2/-1", // Updated content: 2 new lines, 1 deleted line
 			wantErr: false,
 		},
 		{

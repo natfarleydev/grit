@@ -22,7 +22,6 @@ var (
 func init() {
 	countCmd.AddCommand(linesCmd)
 	linesCmd.Flags().StringVarP(&authorRegex, "author-regex", "a", "", "Regex pattern to match author name or email")
-	linesCmd.MarkFlagRequired("author-regex")
 }
 
 func runLines(cmd *cobra.Command, args []string) {
