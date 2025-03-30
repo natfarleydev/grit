@@ -32,7 +32,7 @@ func setupIntegrationTestRepo(t *testing.T) (string, func()) {
 		email      string
 	}{
 		{
-			name:       "file1.txt",
+			name:       "file1.py",
 			content:    "Initial content\nfor file 1\n",
 			newContent: "Updated content\nfor file 1\nby Nathanael\n",
 			author:     "Nathanael Farley",
@@ -104,7 +104,7 @@ func TestCommandLineInterface(t *testing.T) {
 	projectRoot := filepath.Dir(filename)
 
 	// Build the binary
-	binaryName := "grit"
+	binaryName := "gritforintegrationtest"
 	if runtime.GOOS == "windows" {
 		binaryName += ".exe"
 	}
@@ -149,6 +149,18 @@ func TestCommandLineInterface(t *testing.T) {
 			name:    "count lines for Mirabel",
 			args:    []string{"count", "lines", "--author-regex", "Mirabel", "."},
 			wantOut: "+2/-1", // Updated content: 2 new lines, 1 deleted line
+			wantErr: false,
+		},
+		{
+			name:    "count lines for (py$|yml$)",
+			args:    []string{"count", "lines", "--filenames-regex", "(py$|yml$)", "."},
+			wantOut: "+2/-1",
+			wantErr: false,
+		},
+		{
+			name:    "count lines for (py$|txt$)",
+			args:    []string{"count", "lines", "--filenames-regex", "(py$|txt$)", "."},
+			wantOut: "+4/-2",
 			wantErr: false,
 		},
 		{
