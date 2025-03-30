@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	authorRegex string
-	remoteName  string
-	linesCmd    = &cobra.Command{
+	authorRegex     string
+	remoteName      string
+	filenamesRegex  string
+	linesCmd        = &cobra.Command{
 		Use:   "lines [paths...]",
 		Short: "Count lines added/removed by authors matching regex",
 		Run:   runLines,
@@ -26,6 +27,7 @@ func init() {
 	countCmd.AddCommand(linesCmd)
 	linesCmd.Flags().StringVarP(&authorRegex, "author-regex", "a", "", "Regex pattern to match author name or email")
 	linesCmd.Flags().StringVar(&remoteName, "remote", "", "Remote name to use for branch references")
+	linesCmd.Flags().StringVar(&filenamesRegex, "filenames-regex", "", "Regex pattern to match filenames (e.g., '(py$|yml$)' for Python and YAML files)")
 }
 
 func runLines(cmd *cobra.Command, args []string) {
@@ -33,9 +35,20 @@ func runLines(cmd *cobra.Command, args []string) {
 		args = []string{"./"}
 	}
 
+	var filenameRe *regexp.Regexp
+	var err error
+	
+	if filenamesRegex != "" {
+		filenameRe, err = regexp.Compile(filenamesRegex)
+		if err != nil {
+			fmt.Printf("Error compiling filename regex pattern: %v\n", err)
+			return
+		}
+	}
+
 	re, err := regexp.Compile(authorRegex)
 	if err != nil {
-		fmt.Printf("Error compiling regex pattern: %v\n", err)
+		fmt.Printf("Error compiling author regex pattern: %v\n", err)
 		return
 	}
 
@@ -107,6 +120,10 @@ func runLines(cmd *cobra.Command, args []string) {
 			}
 
 			for _, stat := range stats {
+				// Filter by filename regex if specified
+				if filenameRe != nil && !filenameRe.MatchString(stat.Name) {
+					continue
+				}
 				totalAdded += int64(stat.Addition)
 				totalDeleted += int64(stat.Deletion)
 			}
@@ -115,6 +132,7 @@ func runLines(cmd *cobra.Command, args []string) {
 
 		if err != nil {
 			fmt.Printf("Error processing commits for repository at %s: %v\n", path, err)
+			continue
 		}
 	}
 
