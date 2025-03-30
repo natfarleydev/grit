@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	authorRegex     string
-	remoteName      string
-	filenamesRegex  string
-	linesCmd        = &cobra.Command{
+	authorRegex    string
+	remoteName     string
+	filenamesRegex string
+	linesCmd       = &cobra.Command{
 		Use:   "lines [paths...]",
 		Short: "Count lines added/removed by authors matching regex",
 		Run:   runLines,
@@ -26,8 +26,8 @@ var (
 func init() {
 	countCmd.AddCommand(linesCmd)
 	linesCmd.Flags().StringVarP(&authorRegex, "author-regex", "a", "", "Regex pattern to match author name or email")
-	linesCmd.Flags().StringVar(&remoteName, "remote", "", "Remote name to use for branch references")
-	linesCmd.Flags().StringVar(&filenamesRegex, "filenames-regex", "", "Regex pattern to match filenames (e.g., '(py$|yml$)' for Python and YAML files)")
+	linesCmd.Flags().StringVarP(&remoteName, "remote", "r", "", "Remote name to use for branch references")
+	linesCmd.Flags().StringVarP(&filenamesRegex, "filenames-regex", "f", "", "Regex pattern to match filenames (e.g., '(py$|yml$)' for Python and YAML files)")
 }
 
 func runLines(cmd *cobra.Command, args []string) {
@@ -37,7 +37,7 @@ func runLines(cmd *cobra.Command, args []string) {
 
 	var filenameRe *regexp.Regexp
 	var err error
-	
+
 	if filenamesRegex != "" {
 		filenameRe, err = regexp.Compile(filenamesRegex)
 		if err != nil {
