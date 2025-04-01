@@ -16,6 +16,8 @@ var (
 	authorRegex    string
 	remoteName     string
 	filenamesRegex string
+	weekToDate     bool
+	timeNow        = time.Now // For testing
 	linesCmd       = &cobra.Command{
 		Use:   "lines [paths...]",
 		Short: "Count lines added/removed by authors matching regex",
@@ -28,6 +30,7 @@ func init() {
 	linesCmd.Flags().StringVarP(&authorRegex, "author-regex", "a", "", "Regex pattern to match author name or email")
 	linesCmd.Flags().StringVarP(&remoteName, "remote", "r", "", "Remote name to use for branch references")
 	linesCmd.Flags().StringVarP(&filenamesRegex, "filenames-regex", "f", "", "Regex pattern to match filenames (e.g., '(py$|yml$)' for Python and YAML files)")
+	linesCmd.Flags().BoolVarP(&weekToDate, "week-to-date", "w", false, "Count lines from start of current week (Monday) instead of current day")
 }
 
 func runLines(cmd *cobra.Command, args []string) {
@@ -95,8 +98,24 @@ func runLines(cmd *cobra.Command, args []string) {
 			hash = branchRef.Hash()
 		}
 
-		now := time.Now()
-		startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		now := timeNow()
+		var startTime time.Time
+		if weekToDate {
+			// Calculate start of current week (Monday)
+			weekday := now.Weekday()
+			var daysToSubtract int
+			if weekday == time.Sunday {
+				daysToSubtract = 7 // Go back 7 days to get to last Monday
+			} else {
+				daysToSubtract = int(weekday) - 1
+			}
+			startTime = now.AddDate(0, 0, -daysToSubtract)
+			// Set to start of Monday (00:00:00) to include all commits from Monday onwards
+			startTime = time.Date(startTime.Year(), startTime.Month(), startTime.Day(), 0, 0, 0, 0, now.Location())
+		} else {
+			// Start of current day
+			startTime = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		}
 
 		commits, err := repo.Log(&git.LogOptions{From: hash})
 		if err != nil {
@@ -105,7 +124,7 @@ func runLines(cmd *cobra.Command, args []string) {
 		}
 
 		err = commits.ForEach(func(c *object.Commit) error {
-			if c.Author.When.Before(startOfDay) {
+			if c.Author.When.Before(startTime) {
 				return nil
 			}
 
