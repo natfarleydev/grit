@@ -109,6 +109,11 @@ func runLines(cmd *cobra.Command, args []string) {
 				return nil
 			}
 
+			// If the commit is a merge commit, skip it
+			if len(c.ParentHashes) > 1 {
+				return nil
+			}
+
 			// Match against both name and email
 			if !re.MatchString(c.Author.Name) && !re.MatchString(c.Author.Email) {
 				return nil
