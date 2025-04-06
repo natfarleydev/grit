@@ -17,6 +17,7 @@ var (
 	remoteName     string
 	filenamesRegex string
 	weekToDate     bool
+	noCache        bool
 	timeNow        = time.Now // For testing
 	linesCmd       = &cobra.Command{
 		Use:   "lines [paths...]",
@@ -31,6 +32,7 @@ func init() {
 	linesCmd.Flags().StringVarP(&remoteName, "remote", "r", "", "Remote name to use for branch references")
 	linesCmd.Flags().StringVarP(&filenamesRegex, "filenames-regex", "f", "", "Regex pattern to match filenames (e.g., '(py$|yml$)' for Python and YAML files)")
 	linesCmd.Flags().BoolVarP(&weekToDate, "week-to-date", "w", false, "Count lines from start of current week (Monday) instead of current day")
+	linesCmd.Flags().BoolVarP(&noCache, "no-cache", "n", false, "Disable caching of results")
 }
 
 func runLines(cmd *cobra.Command, args []string) {
@@ -38,9 +40,26 @@ func runLines(cmd *cobra.Command, args []string) {
 		args = []string{"./"}
 	}
 
-	var filenameRe *regexp.Regexp
+	var cache *Cache
 	var err error
 
+	if !noCache {
+		// Try to load cache
+		cache, err = loadCache()
+		if err != nil {
+			fmt.Printf("Warning: Could not load cache: %v\n", err)
+			cache = &Cache{Entries: make([]CacheEntry, 0)}
+		}
+
+		// Try to find matching cache entry
+		entry := findMatchingCacheEntry(cache, args, authorRegex, remoteName, filenamesRegex, weekToDate)
+		if entry != nil && isCacheValid(entry, args) {
+			fmt.Printf("+%d/-%d", entry.Results.Added, entry.Results.Deleted)
+			return
+		}
+	}
+
+	var filenameRe *regexp.Regexp
 	if filenamesRegex != "" {
 		filenameRe, err = regexp.Compile(filenamesRegex)
 		if err != nil {
@@ -56,6 +75,7 @@ func runLines(cmd *cobra.Command, args []string) {
 	}
 
 	var totalAdded, totalDeleted int64
+	headHashes := make(map[string]string)
 
 	for _, pathSpec := range args {
 		// Split path and branch if specified (path@branch)
@@ -81,6 +101,7 @@ func runLines(cmd *cobra.Command, args []string) {
 				continue
 			}
 			hash = head.Hash()
+			headHashes[path] = hash.String()
 		} else {
 			var refName plumbing.ReferenceName
 			if remoteName != "" {
@@ -96,6 +117,7 @@ func runLines(cmd *cobra.Command, args []string) {
 				continue
 			}
 			hash = branchRef.Hash()
+			headHashes[path] = hash.String()
 		}
 
 		now := timeNow()
@@ -157,6 +179,39 @@ func runLines(cmd *cobra.Command, args []string) {
 		if err != nil {
 			fmt.Printf("Error processing commits for repository at %s: %v\n", path, err)
 			continue
+		}
+	}
+
+	// Create new cache entry and update cache if caching is enabled
+	if !noCache {
+		newEntry := CacheEntry{
+			Args: struct {
+				AuthorRegex    string
+				RemoteName     string
+				FilenamesRegex string
+				WeekToDate     bool
+			}{
+				AuthorRegex:    authorRegex,
+				RemoteName:     remoteName,
+				FilenamesRegex: filenamesRegex,
+				WeekToDate:     weekToDate,
+			},
+			Paths:      args,
+			HeadHashes: headHashes,
+			Results: struct {
+				Added   int64
+				Deleted int64
+			}{
+				Added:   totalAdded,
+				Deleted: totalDeleted,
+			},
+			Timestamp: time.Now(),
+		}
+
+		// Update cache
+		cache.Entries = append(cache.Entries, newEntry)
+		if err := saveCache(cache); err != nil {
+			fmt.Printf("Warning: Could not save cache: %v\n", err)
 		}
 	}
 
